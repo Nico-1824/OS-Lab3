@@ -1,5 +1,6 @@
 #include <vector>
 using namespace std;
+class PageTable;
 
 // -------------------------------------- The Map Class --------------------------------------
 class Map {
@@ -18,9 +19,9 @@ public:
     PageTable* rootPT;
 
     Level** nextLevel = nullptr;
-    Map* node = nullptr;
+    Map* mapArray = nullptr;
 
-    Level(int d, PageTable* root) : depth(d), rootPT(root) {};
+    Level(int d, PageTable* root);
 };
 // -------------------------------------- The Level Class --------------------------------------
 
@@ -33,6 +34,10 @@ public:
     vector<unsigned int> bitMaskAry;
     vector<unsigned int> shiftAry;
     vector<unsigned int> entryCount;
+    int entries;
+    int nfuInterval;
+    int nfuCounter = 0;
+    int offset;
 
     Level* rootNode = nullptr;
 
@@ -49,8 +54,10 @@ public:
     // Constructor to handle initialization and calculations
     PageTable(const vector<int>& levelBits, int numOfFrames);
 
-    // Utility
     unsigned int extractVPNIndex(unsigned int virtualAddress, int level) const;
     Map* searchMappedPfn(PageTable *pageTable, unsigned int virtualAddress);
+    unsigned int extractVPNFromVirtualAddress(unsigned int virtualAddress, unsigned int mask, unsigned int shift);
+    void insertMapForVpn2Pfn (PageTable *pageTable, unsigned int virtualAddress, int frame);
+    void processAddress(unsigned int virtualAddress, string logOption);
 };
 // -------------------------------------- The PageTable Class  --------------------------------------
