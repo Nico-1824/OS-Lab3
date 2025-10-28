@@ -52,9 +52,6 @@ public:
     long pageReplacements = 0;
 
     PageTable(const vector<int>& levelBits, int numOfFrames);
-    ~PageTable() {
-        delete rootNode;
-    }
 
     unsigned int extractVPNIndex(unsigned int virtualAddress, int level) const;
     Map* searchMappedPfn(PageTable *pageTable, unsigned int virtualAddress);

@@ -46,24 +46,6 @@ Level::Level(int d, PageTable* root) : depth(d), rootPT(root) {
     }
 }
 
-Level::~Level() {
-    if (depth < rootPT->levelCount - 1) {
-        if (nextLevel) {
-            int entries = rootPT->entryCount[depth];
-            for (int i = 0; i < entries; ++i) {
-                if (nextLevel[i]) {
-                    delete nextLevel[i];
-                }
-            }
-            delete[] nextLevel;
-        }
-    } else {
-        if (mapArray) {
-            delete[] mapArray;
-        }
-    }
-}
-
 unsigned int PageTable::extractVPNIndex(unsigned int virtualAddress, int level) const {
     return (virtualAddress & bitMaskAry[level]) >> shiftAry[level];
 }
