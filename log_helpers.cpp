@@ -1,17 +1,21 @@
-#include <stdio.h>
+// log_helpers.cpp
+#include <cstdio>
 #include "log_helpers.h"
 
-/* Handle C++ namespaces, ignore if compiled in C 
+/* Handle C++ namespaces, ignore if compiled in C
  * C++ usually uses this #define to declare the C++ standard.
  * It will not be defined if a C compiler is used.
  */
 #ifdef __cplusplus
+#include <cstdint>
 using namespace std;
+#else
+#include <inttypes.h>
 #endif
 
 /**
  * @brief Print out a number in hex, one per line
- * @param number 
+ * @param number
  */
 void print_num_inHex(uint32_t number) {
   printf("%08X\n", number);
@@ -20,13 +24,13 @@ void print_num_inHex(uint32_t number) {
 
 /**
  * @brief Print out bitmasks for all page table levels.
- * 
+ *
  * @param levels - Number of levels
  * @param masks - Pointer to array of bitmasks
  */
 void log_bitmasks(int levels, uint32_t *masks) {
   printf("Bitmasks\n");
-  for (int idx = 0; idx < levels; idx++) 
+  for (int idx = 0; idx < levels; idx++)
     /* show mask entry and move to next */
     printf("level %d mask %08X\n", idx, masks[idx]);
 
@@ -34,11 +38,11 @@ void log_bitmasks(int levels, uint32_t *masks) {
 }
 
 /**
- * @brief log a virtual address to physical address mapping 
+ * @brief log a virtual address to physical address mapping
  * Example usages:
- * 
- * @param va 
- * @param pa 
+ *
+ * @param va
+ * @param pa
  */
 void log_va2pa(uint32_t va, uint32_t pa) {
   fprintf(stdout, "%08X -> %08X\n", va, pa);
@@ -46,8 +50,8 @@ void log_va2pa(uint32_t va, uint32_t pa) {
 }
 
 /**
- * @brief Given a pair of numbers, output a line: 
- *        src -> dest  
+ * @brief Given a pair of numbers, output a line:
+ *        src -> dest
  * Example usages:
  * log mapping between virtual and physical addresses
  *   e.g., log_mapping(va, pa, vpnReplaced, false)
@@ -55,28 +59,29 @@ void log_va2pa(uint32_t va, uint32_t pa) {
  * log mapping between vpn and pfn: mapping(page, frame)
  *   e.g., log_mapping(vpn, pfn, vpnReplaced, true)
  *         pagetable hit
- * 
- * if vpnReplaced is -1, there was no page replacement
- * 
+ *
+ * if vpnReplaced is 0, there was no page replacement
+ *
  * note if vpnReplaced is bigger than 0, pthit has to be false
- * 
- * @param src 
- * @param dest 
- * @param pagereplace
- * @param pthit 
+ *
+ * @param src
+ * @param dest
+ * @param vpnreplaced
+ * @param victim_bitstring
+ * @param status
  */
-void log_mapping(uint32_t src, uint32_t dest, 
+void log_mapping(uint32_t src, uint32_t dest,
                  int vpnreplaced,
                  unsigned int victim_bitstring,
-                 bool pthit) {
-  
+                 const char* status) {
+
   fprintf(stdout, "%08X -> %08X, ", src, dest);
 
-  fprintf(stdout, "pagetable %s", pthit ? "hit" : "miss");
-  
-  if (vpnreplaced != -1) // vpn was replaced due to page replacement
-    fprintf(stdout, 
-            ", %08X page (with bitstring %04X) was replaced\n", 
+  fprintf(stdout, "pagetable %s", status);
+
+  if (vpnreplaced != 0) // vpn was replaced due to page replacement
+    fprintf(stdout,
+            ", %08X page (with bitstring %04X) was replaced\n",
             vpnreplaced,
             victim_bitstring);
   else {
@@ -88,9 +93,9 @@ void log_mapping(uint32_t src, uint32_t dest,
 
 /**
  * @brief log vpns at all levels and the mapped physical frame number
- * 
+ *
  * @param levels - specified number of levels in page table
- * @param vpns - vpns[idx] is the virtual page number associated with 
+ * @param vpns - vpns[idx] is the virtual page number associated with
  *	              level idx (0 < idx < levels)
  * @param frame - page is mapped to specified physical frame
  */
@@ -106,7 +111,7 @@ void log_vpns_pfn(int levels, uint32_t *vpns, uint32_t frame) {
 
 /**
  * @brief log summary information for the page table.
- * 
+ *
  * @param page_size - Number of bytes per page
  * @param numOfPageReplaces - Number of page replacements
  * @param pageTableHits - Number of times a virtual page was mapped
@@ -114,10 +119,10 @@ void log_vpns_pfn(int levels, uint32_t *vpns, uint32_t frame) {
  * @param numOfFramesAllocated - Number of frames allocated
  * @param pgtableEntries - Total number of page table entries across all levels.
  */
-void log_summary(unsigned int page_size, 
+void log_summary(unsigned int page_size,
                  unsigned int numOfPageReplaces,
-                 unsigned int pageTableHits, 
-                 unsigned int numOfAddresses, 
+                 unsigned int pageTableHits,
+                 unsigned int numOfAddresses,
                  unsigned int numOfFramesAllocated,
                  unsigned long int pgtableEntries) {
   unsigned int misses;
@@ -128,13 +133,12 @@ void log_summary(unsigned int page_size,
   misses = numOfAddresses - pageTableHits;
   hit_percent = (double) (pageTableHits) / (double) numOfAddresses * 100.0;
   printf("Addresses processed: %d\n", numOfAddresses);
-  printf("Page hits: %d, Misses: %d, Page Replacements: %d\n", 
+  printf("Page hits: %d, Misses: %d, Page Replacements: %d\n",
          pageTableHits, misses, numOfPageReplaces);
-  printf("Page hit percentage: %.2f%%, miss percentage: %.2f%%\n", 
+  printf("Page hit percentage: %.2f%%, miss percentage: %.2f%%\n",
          hit_percent, 100 - hit_percent);
   printf("Frames allocated: %d\n", numOfFramesAllocated);
   printf("Number of page table entries: %ld\n", pgtableEntries);
 
   fflush(stdout);
 }
-

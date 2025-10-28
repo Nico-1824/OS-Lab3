@@ -4,7 +4,6 @@
 #include <limits>
 #include <algorithm>
 #include "log_helpers.h"
-#include <climits>
 using namespace std;
 
 PageTable::PageTable(const vector<int>& levelBits, int numOfFrames) {
@@ -43,24 +42,6 @@ Level::Level(int d, PageTable* root) : depth(d), rootPT(root) {
         for (int i = 0; i < entries; i++)
             mapArray[i].frameNumber = -1;
         rootPT->entries += entries;
-    }
-}
-
-Level::~Level() {
-    if (depth < rootPT->levelCount - 1) {
-        if (nextLevel) {
-            int entries = rootPT->entryCount[depth];
-            for (int i = 0; i < entries; ++i) {
-                if (nextLevel[i]) {
-                    delete nextLevel[i];
-                }
-            }
-            delete[] nextLevel;
-        }
-    } else {
-        if (mapArray) {
-            delete[] mapArray;
-        }
     }
 }
 
@@ -108,8 +89,6 @@ void PageTable::processAddress(unsigned int virtualAddress, string logOption) {
 
     Map* map = searchMappedPfn(this, virtualAddress);
 
-    bool aged_this_time = false;
-
     // Track access before aging
     if (map != nullptr && this->nfuInterval > 0) {
         this->accessedPagesInInterval.insert(map);
@@ -127,7 +106,6 @@ void PageTable::processAddress(unsigned int virtualAddress, string logOption) {
             }
             this->accessedPagesInInterval.clear();
             this->nfuCounter = 0;
-            aged_this_time = true;
         }
     }
 
@@ -148,7 +126,7 @@ void PageTable::processAddress(unsigned int virtualAddress, string logOption) {
             newMap->lastAccessTime = this->accesses;
             this->loadedPagesCollection.push_back(newMap);
             this->framesUsed++;
-            if (this->nfuInterval > 0 && !aged_this_time) {
+            if (this->nfuInterval > 0) {
                 this->accessedPagesInInterval.insert(newMap);
             }
             if (logOption == "vpn2pfn_pr") {
@@ -184,7 +162,7 @@ void PageTable::processAddress(unsigned int virtualAddress, string logOption) {
                 *it = newMap;
             }
 
-            if (this->nfuInterval > 0 && !aged_this_time) {
+            if (this->nfuInterval > 0) {
                 this->accessedPagesInInterval.erase(victim);
                 this->accessedPagesInInterval.insert(newMap);
             }
