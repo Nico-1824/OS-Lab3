@@ -130,7 +130,7 @@ void PageTable::processAddress(unsigned int virtualAddress, string logOption) {
     if(logOption == "offset") {
         unsigned int offsetMask = (1U << this->offset) - 1;
         unsigned int offset = virtualAddress & offsetMask;
-        cout << offset << endl;
+        print_num_inHex(offset);
     } else if(logOption == "vpns_pfn") {
         uint32_t vpns[this->levelCount];
         for(int i = 0; i < this->levelCount; i++) {

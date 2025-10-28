@@ -10,7 +10,7 @@
 #include "log_helpers.h"
 
 // Constants for default values
-#define DEFAULT_NUM_FRAMES 999999
+#define DEFAULT_NUM_FRAMES INT32_MAX
 
 using namespace std;
 
@@ -29,38 +29,38 @@ int main(int argc, char** argv) {
     // Default values for optional arguments
     int numFrames = DEFAULT_NUM_FRAMES;
     int maxAddresses = 0; // 0 means process all
-    int nfuInterval = 0; // 0 if -b is not provided, otherwise the interval
-    string logOption;
+    int nfuInterval = 10; // 10 if -b is not provided, otherwise the interval is set
+    string logOption = "summary"; // defines what to log and if empty logs summary
     
     string traceFile;
-    vector<int> levelBits;
+    vector<int> levelBits; 
 
     int Option;
     // Parse command line arguments: -f (frames), -n (max addresses), -b (NFU interval), -l (logging)
     while ((Option = getopt(argc, argv, "f:n:b:l:")) != -1) {
         switch (Option) {
-            case 'f':
+            case 'f': // number of frames
                 numFrames = atoi(optarg);
                 if (numFrames <= 0) {
-                    cout << "Error: Number of frames (-f) must be a positive integer." << endl;
+                    cout << "Number of available frames must be a number and greater than 0" << endl;
                     exit(1);
                 }
                 break;
-            case 'n':
+            case 'n': // number of address to process and cap
                 maxAddresses = atoi(optarg);
-                if (maxAddresses < 0) {
-                    cout << "Error: Max addresses (-n) must be a non-negative integer." << endl;
+                if (maxAddresses <= 0) {
+                    cout << "Number of memory accesses must be a number and greater than 0" << endl;
                     exit(1);
                 }
                 break;
-            case 'b':
+            case 'b': // the replacement interval
                 nfuInterval = atoi(optarg);
                 if (nfuInterval <= 0) {
-                    cout << "Error: NFU interval (-b) must be a positive integer." << endl;
+                    cout << "Bit string update interval must be a number and greater than 0" << endl;
                     exit(1);
                 }
                 break;
-            case 'l':
+            case 'l': // logging option 
                 logOption = optarg;
                 break;
             default:
@@ -77,7 +77,6 @@ int main(int argc, char** argv) {
     if (mandatoryArgStart < argc) {
         traceFile = argv[mandatoryArgStart++];
     } else {
-        cout << "Error: Trace file path is missing." << endl;
         exit(1);
     }
 
@@ -88,7 +87,7 @@ int main(int argc, char** argv) {
             if (isValidInteger(bitStr)) {
                 int bits = stoi(bitStr);
                 if (bits <= 0) {
-                    cout << "Error: All level bits must be positive integers." << endl;
+                    cout << "Level 0 page table must be at least 1 bit" << endl;
                     exit(1);
                 }
                 levelBits.push_back(bits);
@@ -108,7 +107,7 @@ int main(int argc, char** argv) {
         totalBits += bits;
     }
     if (totalBits > 28) { // 32 total bits - 4 bits for offset (minimum)
-        cout << "Error: Total level bits (" << totalBits << ") must not exceed 28 (32-bit address minus minimum 4-bit offset)." << endl;
+        cout << "Too many bits used in page tables" << endl;
         exit(1);
     }
 
@@ -122,7 +121,7 @@ int main(int argc, char** argv) {
     // Open Trace File (using C function fopen for FILE*)
     FILE* pFile = fopen(traceFile.c_str(), "r");
     if (!pFile) {
-        cout << "Error: Cannot open trace file: " << traceFile << endl;
+        cout << "Unable to open " << traceFile << endl;
         exit(1);
     }
     
@@ -142,7 +141,7 @@ int main(int argc, char** argv) {
 
     // --- Cleanup and Final Output ---
     fclose(pFile);
-    if(logOption == "") {
+    if(logOption == "summary") {
         log_summary(1U << pt.offset, 
                     0, 
                     pt.pageHits, 
